@@ -71,6 +71,15 @@ jobs:
           ./scripts/config --file build/.config \
             -e CONFIG_SECTION_MISMATCH_WARN_ONLY
 
+          # Enable missing hardware drivers from phone config
+          ./scripts/config --file build/.config \
+            -e CONFIG_QCA_CLD_WLAN \
+            -e CONFIG_LEDS_QPNP_FLASH_V2 \
+            -e CONFIG_LEDS_QPNP_VIBRATOR_LDO \
+            -e CONFIG_BACKLIGHT_QCOM_SPMI_WLED \
+            -e CONFIG_MSM_BT_POWER \
+            -e CONFIG_MSM_RDBG
+
           make O=build olddefconfig
 
           echo "=== Config ==="
