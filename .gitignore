@@ -19,13 +19,25 @@ AnyKernel3/
 .vscode/
 .idea/
 
-# Submodules/repos
-device-dre/
+# Submodules/repos (fetched at build time)
 kernel_src/
+device-dre/
 vendor-dre/
 odm/
 vendor/
 blobs/
 firmware/
 dtb/
-*.zip
+
+# Local build outputs
+Image
+Image.gz
+ramdisk.cpio.gz
+kernel.img
+phone_config
+phone_config.gz
+phone_running_config
+config_diff.txt
+n200-ksu-next-full-*/
+build.log
+*.log
