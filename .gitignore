@@ -1,0 +1,31 @@
+# Large binary artifacts
+*.img
+*.tar.gz
+*.zip
+build-disk.img
+boot_*.img
+*blobs*.tar.gz
+*.bin
+*.dtb
+*.dtbo
+
+# Build outputs
+build/
+out/
+AnyKernel3/
+
+# IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Submodules/repos
+device-dre/
+kernel_src/
+vendor-dre/
+odm/
+vendor/
+blobs/
+firmware/
+dtb/
+*.zip
