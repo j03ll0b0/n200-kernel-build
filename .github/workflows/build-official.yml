@@ -39,25 +39,16 @@ jobs:
           git clone --depth=1 --branch lineage-23.2 \
             https://github.com/LineageOS/android_kernel_oneplus_sm4350.git kernel-5.4
 
-      - name: Configure kernel using official build system
+      - name: Configure kernel (official defconfig + features)
         run: |
           cd kernel-5.4
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabihf-
           
-          # Official LOS build config for SM4350 (lahaina) with qgki variant
-          export KERNEL_DIR=.
-          export OUT_DIR=build
-          export VARIANT=qgki
-          export MSM_ARCH=lahaina
-          
-          # Source the build config (it sets up DEFCONFIG and PRE_DEFCONFIG_CMDS)
-          . ./build.config.msm.lahaina
-          
-          # Run the generate_defconfig function which does merge_config.sh
-          generate_defconfig
-          
+          # Use official LOS holi-qgki defconfig
+          make O=build vendor/holi-qgki_defconfig
+
           # Optionally enable KSU-Next
           if [ "${{ inputs.enable_ksu }}" = "true" ]; then
             ./scripts/config --file build/.config -e CONFIG_KSU
@@ -74,7 +65,7 @@ jobs:
               -d CONFIG_TCP_CONG_CUBIC
           fi
 
-          # Apply any build fixes
+          # Build fixes
           ./scripts/config --file build/.config \
             -e CONFIG_SECTION_MISMATCH_WARN_ONLY
 
