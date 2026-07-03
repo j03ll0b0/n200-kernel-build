@@ -166,7 +166,7 @@ cat > anykernel.sh << 'AKEOF'
 properties() { '
 kernel.string=N200 ReSukiSU Kernel | LOS 23.2 | LTO/ThinLTO/CFI | BBR
 do.devicecheck=1
-do.modules=1
+do.modules=0
 do.systemless=0
 do.cleanup=1
 do.cleanuponabort=0
