@@ -1,0 +1,138 @@
+name: Build N200 Kernel (Official LOS 23.2)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      enable_ksu:
+        description: 'Enable KernelSU-Next'
+        required: true
+        type: boolean
+        default: false
+      enable_bbr:
+        description: 'Enable BBR + TMPFS_XATTR + WireGuard'
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            git-core flex bison gperf build-essential zip curl \
+            libncurses5-dev libssl-dev libelf-dev bc cpio \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf \
+            clang-20 lld-20 llvm-20 \
+            python3 python3-distutils python3-venv
+
+      - name: Clone official LineageOS 23.2 kernel source
+        run: |
+          git clone --depth=1 --branch lineage-23.2 \
+            https://github.com/LineageOS/android_kernel_oneplus_sm4350.git kernel-5.4
+
+      - name: Configure kernel using official build system
+        run: |
+          cd kernel-5.4
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabihf-
+          
+          # Use official LOS build config for SM4350 (lahaina) with qgki variant
+          export KERNEL_DIR=.
+          export OUT_DIR=build
+          export VARIANT=qgki
+          export MSM_ARCH=lahaina
+          
+          # Generate defconfig using their build system
+          ./build.config.msm.lahaina
+          make O=build vendor/holi-qgki_defconfig
+
+          # Optionally enable KSU-Next (adds its config fragment)
+          if [ "${{ inputs.enable_ksu }}" = "true" ]; then
+            ./scripts/config --file build/.config -e CONFIG_KSU
+          fi
+
+          # Optionally enable extra features
+          if [ "${{ inputs.enable_bbr }}" = "true" ]; then
+            ./scripts/config --file build/.config \
+              -e CONFIG_TCP_CONG_ADVANCED \
+              -e CONFIG_TCP_CONG_BBR \
+              -e CONFIG_TMPFS_XATTR \
+              -e CONFIG_TCP_MD5SIG \
+              -e CONFIG_WIREGUARD \
+              -d CONFIG_TCP_CONG_CUBIC
+          fi
+
+          # Apply any build fixes
+          ./scripts/config --file build/.config \
+            -e CONFIG_SECTION_MISMATCH_WARN_ONLY
+
+          make O=build olddefconfig
+
+          echo "=== Config ==="
+          grep -E 'CONFIG_KSU=|CONFIG_TCP_CONG_BBR=|CONFIG_WIREGUARD=|CONFIG_TMPFS_XATTR=|CONFIG_LTO=' build/.config
+
+      - name: Build kernel
+        run: |
+          cd kernel-5.4
+          export ARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabihf-
+          
+          BUILD_START=$(date +%s)
+          make O=build -j$(nproc) \
+            CC=clang-20 \
+            LD=ld.lld-20 \
+            AR=llvm-ar-20 \
+            NM=llvm-nm-20 \
+            OBJCOPY=llvm-objcopy-20 \
+            OBJDUMP=llvm-objdump-20 \
+            STRIP=llvm-strip-20 \
+            KCFLAGS="-Wno-unused-but-set-variable -Wno-strict-prototypes -Wno-implicit-function-declaration" \
+            2>&1 | tee build.log
+          BUILD_END=$(date +%s)
+          echo "Build time: $((BUILD_END - BUILD_START)) seconds"
+
+      - name: Package AnyKernel3
+        run: |
+          # Setup AnyKernel3
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+          
+          # Copy kernel Image
+          if [ -f kernel-5.4/build/arch/arm64/boot/Image.gz ]; then
+            gunzip -c kernel-5.4/build/arch/arm64/boot/Image.gz > Image
+          elif [ -f kernel-5.4/build/arch/arm64/boot/Image ]; then
+            cp kernel-5.4/build/arch/arm64/boot/Image Image
+          else
+            echo "ERROR: Kernel image not found!"
+            exit 1
+          fi
+          
+          cp Image AnyKernel3/
+          cp anykernel.sh AnyKernel3/
+          
+          cd AnyKernel3
+          FEATURES="official-los23"
+          [ "${{ inputs.enable_ksu }}" = "true" ] && FEATURES="${FEATURES}-ksu"
+          [ "${{ inputs.enable_bbr }}" = "true" ] && FEATURES="${FEATURES}-bbr"
+          ZIP_NAME="n200-${FEATURES}-$(date +%Y%m%d-%H%M).zip"
+          zip -r9 "../$ZIP_NAME" . -x ".git/*" "*.md" "README*" "LICENSE"
+          cd ..
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: n200-kernel-zip
+          path: n200-*.zip
+          retention-days: 7
