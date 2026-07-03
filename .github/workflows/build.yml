@@ -134,6 +134,16 @@ jobs:
           cp Image AnyKernel3/
           cp anykernel.sh AnyKernel3/
           
+          # Copy built kernel modules (WiFi, BT, audio, etc.)
+          echo "=== Collecting kernel modules ==="
+          MODULES_DIR="AnyKernel3/modules/system/lib/modules"
+          mkdir -p "$MODULES_DIR"
+          find kernel-5.4/build -name "*.ko" -type f | while read mod; do
+            cp "$mod" "$MODULES_DIR/"
+            echo "  + $(basename $mod)"
+          done
+          echo "Total modules: $(ls -1 $MODULES_DIR/*.ko 2>/dev/null | wc -l)"
+          
           cd AnyKernel3
           FEATURES="stock"
           [ "${{ inputs.enable_ksu }}" = "true" ] && FEATURES="${FEATURES}-ksu"
