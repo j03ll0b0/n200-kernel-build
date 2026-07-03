@@ -76,7 +76,19 @@ jobs:
             -e CONFIG_QCA_CLD_WLAN \
             -e CONFIG_LEDS_QPNP_FLASH_V2 \
             -e CONFIG_MSM_BT_POWER \
-            -e CONFIG_MSM_RDBG
+            -e CONFIG_MSM_RDBG \
+            -e CONFIG_PINCTRL_LPI \
+            -e CONFIG_SND_SOC_WCD9XXX_V2 \
+            -e CONFIG_SND_SOC_BOLERO \
+            -e CONFIG_VA_MACRO \
+            -e CONFIG_RX_MACRO \
+            -e CONFIG_TX_MACRO \
+            -e CONFIG_SND_SOC_WCD938X \
+            -e CONFIG_SOUNDWIRE \
+            -e CONFIG_MSM_QDSP6_APRV2_RPMSG \
+            -e CONFIG_SND_SOC_HOLI \
+            -e CONFIG_SND_SOC_WSA881X_ANALOG \
+            -e CONFIG_MSM_ADSP_LOADER
 
           make O=build olddefconfig
 
