@@ -1,106 +1,122 @@
 # N200 Kernel Build - Project Journal
 
 ## Project Goal
-Build a custom kernel for OnePlus Nord N200 (dre/DE2117) running **LineageOS 23.2** (Android 14) based on the LineageOS kernel source, with KSU-Next + SukiSU features ported from GarryStraitYT.
+Build a custom kernel for OnePlus Nord N200 (dre/DE2117) running **LineageOS 23.2** (Android 14) with WireGuard, BBR, LTO/ThinLTO/CFI, and eventually root (KSU-Next or ReSukiSU).
 
 ## Key Facts
 - **Device**: OnePlus Nord N200 5G (codename `dre`, DE2117)
-- **SoC**: SM4350 (Snapdragon 480)
+- **SoC**: SM4350 (Snapdragon 480) — platform codename "holi"
 - **ROM**: LineageOS 23.2 (Android 14)
-- **Kernel**: 5.4.302 (QGKI)
-- **Build VM**: 172.16.17.128 (usuario/1234)
+- **Kernel**: 5.4.302 (QGKI) — `arch/arm64/configs/vendor/holi-qgki_defconfig`
+- **Build VM**: 172.16.17.128 (usuario/1234) — mostly unused now, CI is primary
 - **Host**: /Users/usuario/source/n200-kernel-build/
 - **GitHub**: https://github.com/j03ll0b0/n200-kernel-build
+- **CI**: GitHub Actions workflow in `.github/workflows/build.yml`
 
-## 🔍 Three-Way Comparison (Last updated: 2026-07-03)
+## CI Build History (latest = most relevant)
 
-### 1️⃣ GarryStraitYT/android_kernel_oneplus_sm4350
-- **Branch**: `5.4.302-lineageos23.x`
-- **Forked from**: LineageOS/android_kernel_oneplus_sm4350:lineage-23.2
-- **Ahead of LOS**: 392 commits (large divergence)
-- **Root**: SukiSU (integrated directly into tree)
-- **Age**: ~5 months old (last commit Feb 2, 2026)
-- **Has CI**: ❌ No GitHub Actions workflow
-- **Build method**: Uses Android.mk + OplusKernelEnvConfig.mk (OPlus build system)
-- **Pros**: SukiSU is directly in tree, proven custom kernel
-- **Cons**: 392 commits makes diff analysis hard, older, no CI
+| # | Status | Features | Notes |
+|---|--------|----------|-------|
+| 22 | ⏳ running | BBR, flash, BT, no modules | Correct approach: kernel-only zip |
+| 21 | — | same as #22 | Triggered but superseded |
+| 20 | ✅ success | BBR, modules (35 .ko) | Nested zip issue (user flashed wrapper) |
+| 19 | ✅ success | Same as #20 but no BBR | |
+| 17 | ❌ failure | QCA_CLD_WLAN=y | Staging driver compile error with clang-20 |
+| 8 | ✅ success | Stock LOS + BBR, no modules | **Booted** but no WiFi/BT/audio |
+| 2 | ✅ success | Kong's kernel repackaged | Flashed correctly (boot_b), kernel hung at logo |
 
-### 2️⃣ KongXing0819/android_kernel_oneplus_sm4350
-- **Branch**: `lineage-23.2-new` (also has `lineage-23.2`)
-- **Forked from**: LineageOS/android_kernel_oneplus_sm4350:lineage-23.2
-- **Ahead of LOS**: Only 6 commits (minimal changes!)
-- **Root**: ReSukiSU (via `ksu.sh` -> `curl https://github.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh | bash`)
-- **Age**: ~1 week old (last commit Jun 27, 2026)
-- **Has CI**: ✅ GitHub Actions "Build Android Kernel with NDK" (proven, 12+ successful runs)
-- **Build method**: Android NDK r30 beta1 (LLVM/clang) + `build/.config` + `make O=build LLVM=1`
-- **Key features in `build/.config`**: LTO, ThinLTO, CFI, WireGuard, Shadow Call Stack, KSU hooks (manual)
-- **Missing features**: BBR (CUBIC only), TMPFS_XATTR disabled, TCP_MD5SIG disabled, KSU disabled (n)
-- **Pros**: Most recent, minimal changes from stock LOS, proven CI builds, ReSukiSU integration
-- **Cons**: Missing our extra features (BBR, TMPFS_XATTR, etc.)
+## Current State (Build #8 — the one that booted)
 
-### 3️⃣ Our Repo (j03ll0b0/n200-kernel-build) — CURRENT RECIPE
-- **Kernel base**: OnePlus OSS (`oneplus/SM4350_R_11.0`) — OOS 11 base
-- **Root**: KSU-Next v3.2.0-legacy
-- **Features**: BBR, TMPFS_XATTR, TCP_MD5SIG, LTO/ThinLTO/CFI, SCS, COMPAT_VDSO
-- **Toolchain**: clang-20
-- **Has CI**: ✅ GitHub Actions (simple build.yml + detailed build-n200.yml)
-- **Pros**: Has all features we want
-- **Cons**: OOS kernel base may not match LineageOS 23.2 — **untested** (user couldn't flash yet)
+**Works:**
+- ✅ Boots to LineageOS
+- ✅ Display, touch, fingerprint
+- ✅ Vibrator
 
-## ✅ Unified Recipe (Target)
+**Missing:**
+- ❌ WiFi (QCA_CLD_WLAN=m — module not built/included)
+- ❌ Bluetooth (MSM_BT_POWER=m — module not built/included)
+- ❌ Flashlight (LEDS_QPNP_FLASH_V2=y — not in config)
+- ❌ Audio (techpack drivers — not built/included)
 
-**Base**: KongXing0819's `lineage-23.2-new` (most recent LOS 23.2, proven CI)
-**Root**: ReSukiSU (via ksu.sh from KongXing0819's repo)
-**Extra features** (currently missing from Kong's config):
-  - CONFIG_TCP_CONG_BBR=y (replace CUBIC)
-  - CONFIG_TMPFS_XATTR=y
-  - CONFIG_TCP_MD5SIG=y
-  - CONFIG_KSU=y (enable ReSukiSU)
-**Build system**: `build.sh` (runs locally or via CI)
-**AnyKernel3**: Our own `anykernel.sh` (updated to proper format)
-**Packaging**: make_anykernel_fixed.sh style
+## Critical Lesson: Modules vs Built-in
 
-## What's Good from Each Project
+**LineageOS official approach:** Vendor modules (.ko) are **pre-built binary blobs extracted from the device**, NOT built from source. The kernel build only produces the `Image` file. The vendor modules on the phone (`/vendor/lib/modules/`) stay untouched.
 
-### From KongXing0819:
-- ✅ LOS 23.2 kernel base (correct for phone's ROM)
-- ✅ ksu.sh integration with ReSukiSU (latest root)
-- ✅ build/.config preconfigured with LTO, ThinLTO, CFI, WireGuard, SCS
-- ✅ GitHub Actions workflow (proven)
-- ✅ Clang/LLVM toolchain (NDK r30)
+**Our mistake (builds #19-20):** We built `.ko` files from the kernel's techpack source using clang-20 and bundled them in the flashable zip. These clang-20 compiled modules are incompatible with the stock vendor modules → **black screen / boot failure**.
 
-### From GarryStraitYT:
-- ✅ SukiSU integration approach
-- ✅ Kernel concept (already on LOS 23.2)
-- ✅ Our build scripts (build_kernel_full.sh, make_anykernel_fixed.sh)
+**The fix:** `do.modules=0` in anykernel.sh, don't include any `.ko` files. The kernel must be ABI-compatible with the existing vendor blobs.
 
-### From Our Repo:
-- ✅ Extra features config (BBR, TMPFS_XATTR, TCP_MD5SIG)
-- ✅ Proper anykernel.sh with device checks
-- ✅ clang-20 toolchain config
+## Hardware Drivers: How to Fix Properly
 
-## Decision
-**Use KongXing0819's repo as the kernel base** → add our missing features → build with our build.sh → package with proper AnyKernel3.
+| Driver | Type | Fix Approach |
+|--------|------|-------------|
+| **WiFi** (QCA_CLD_WLAN) | Module (=m) | Must be built as module, compatible with vendor's existing `.ko`. Or: set `=m` in .config, build module, but use **vendor's pre-built module** instead. |
+| **BT** (MSM_BT_POWER) | Module (=m) | Same as WiFi — need vendor-compatible module |
+| **Flashlight** (LEDS_QPNP_FLASH_V2) | Built-in (=y) | Set in .config, built into kernel Image — no module needed |
+| **Audio** (techpack) | Module (=m) | Most complex. Uses `holiauto.conf` env vars, not standard Kconfig. Vendor modules from LOS should work if kernel ABI is compatible. |
 
-## Status
-- [x] Found GarryStraitYT repo (branch: 5.4.302-lineageos23.x)
-- [x] Found LineageOS 23.2 kernel source
-- [x] Identified: Garry's kernel bootloops (heavily diverged, 392 commits ahead of LOS); our kernel is untested
-- [x] Found KongXing0819's repo (LOS 23.2 + ReSukiSU, proven CI)
-- [x] Downloaded latest KernelSU artifact from Kong's CI
-- [x] Packaged Kong's kernel as AnyKernel3 flashable ZIP
-- [x] Updated build.sh with unified recipe
-- [x] Updated anykernel.sh with proper format
-- [ ] Push updated repo and test CI
-- [ ] Flash and test on device
+**The real solution for modules:** Either:
+A) Match the stock LOS kernel config exactly (same ABI) → vendor modules work
+B) Extract the vendor `.ko` files from the phone and sign/repackage them
+C) Use the same toolchain as LOS (Android NDK r30 beta1, not clang-20 from apt)
 
-## Commands
+## What's in the Repo
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/build.yml` | CI workflow: clones Kong's LOS kernel, builds with clang-20, packages AnyKernel3 |
+| `build.sh` | Local build script (same as CI but runs on VM) |
+| `anykernel.sh` | AnyKernel3 script: dump_boot/write_boot, BLOCK=/dev/block/by-name/boot, IS_SLOT_DEVICE=1 |
+| `JOURNAL.md` | This file |
+| `SOUL.md` | Older state document (from initial OOS-based build) |
+
+## CI Workflow Details
+
+- **Kernel source**: KongXing0819/android_kernel_oneplus_sm4350:lineage-23.2-new
+- **Defconfig**: `vendor/holi-qgki_defconfig`
+- **Toolchain**: clang-20, lld-20, llvm-20 (from apt)
+- **Extra configs**: BBR, TMPFS_XATTR, TCP_MD5SIG, WireGuard, LEDS_QPNP_FLASH_V2, MSM_BT_POWER, MSM_RDBG, SECTION_MISMATCH_WARN_ONLY=y
+- **Packaging**: AnyKernel3 (clone from osm0sis/AnyKernel3), kernel Image + anykernel.sh only
+- **Artifact**: GitHub Actions artifact (nested zip — extract inner zip before flashing)
+
+## Flashable Zips in ~/Downloads/
+
+| File | Build | Size | Notes |
+|------|-------|------|-------|
+| `n200-los23-stock-bbr-*.zip` | #22 (latest) | ~20MB | Kernel only, no modules — **try this first** |
+| `n200-kernel-zip (2).zip` | #20 | 121MB | GitHub wrapper — contains `n200-los23-stock-bbr-*.zip` inside + modules |
+| `n200-custom-20260703-0745.zip` | OOS build | 21MB | Old OOS-based kernel, bootlooped |
+| `AnyKernel3-Resukisu-dre-LOS23.2-latest.zip` | Kong's kernel | 21MB | LOS+ReSukiSU, hung at boot logo |
+
+## Next Steps (in order)
+
+1. ✅ **Flash build #22** — kernel-only with BBR/flash/BT config, no modules, no systemless
+2. ⬜ If WiFi/BT/audio still broken → extract vendor modules from phone, compare ABI
+3. ⬜ Add root — KSU-Next with **tracepoint hooks** (CONFIG_KSU_TRACEPOINT_HOOK=y, not manual hooks)
+4. ⬜ If tracepoint hooks work, add ReSukiSU or KSU-Next permanently
+
+## Useful Commands
+
 ```bash
-# Clone kernel
-git clone --depth=1 --branch lineage-23.2-new \
-  https://github.com/KongXing0819/android_kernel_oneplus_sm4350.git
+# Trigger CI build
+gh workflow run "Build N200 Kernel (Stock LOS 23.2 baseline)" \
+  --repo j03ll0b0/n200-kernel-build --ref main \
+  -f enable_ksu=false -f enable_bbr=true
 
-# Run our build
-cd /Users/usuario/source/n200-kernel-build
-bash build.sh
+# Download CI artifact
+gh run download <run-id> --repo j03ll0b0/n200-kernel-build --dir /tmp/out
+
+# Extract inner zip from GitHub artifact
+unzip -o n200-kernel-zip.zip && ls *.zip  # then flash the inner one
+
+# Build locally on VM
+sshpass -p 1234 ssh usuario@172.16.17.128 'bash ~/build_kernel_full.sh'
 ```
+
+## Three-Way Comparison (TL;DR)
+
+| Project | Base | Root | Freshness | Verdict |
+|---------|------|------|-----------|---------|
+| **GarryStraitYT** | LOS 23.2 | SukiSU | 5mo old | Bootlooped, 392 commits ahead |
+| **KongXing0819** | LOS 23.2 | ReSukiSU | 1 week old | Hung at logo, 6 commits ahead |
+| **Our repo** | LOS 23.2 (CI) | None yet | Latest | Kernel boots, missing WiFi/BT/audio |

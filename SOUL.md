@@ -2,15 +2,16 @@
 
 ## Project: OnePlus Nord N200 (DE2117 / dre / SM4350) Custom Kernel
 
-**Goal:** Build a custom kernel matching the running phone's exact config and toolchain (clang-20 LTO/ThinLTO/PGO/CFI), adding KSU-Next root, BBR, TMPFS_XATTR. Package into AnyKernel3 flashable ZIP.
+**Goal:** Build a custom kernel for OnePlus Nord N200 (dre/DE2117) running LineageOS 23.2, with WireGuard, BBR, LTO/ThinLTO/CFI, and root (KSU-Next/ReSukiSU).
 
-**Kernel Source:** OnePlus OSS `oneplus/SM4350_R_11.0` branch (5.4.300-qgki)
+**Kernel Source:** KongXing0819/android_kernel_oneplus_sm4350:lineage-23.2-new (LOS 23.2 base)
+**Defconfig:** arch/arm64/configs/vendor/holi-qgki_defconfig
 **Device:** OnePlus Nord N200 5G (codename `dre`)
-**Build VM:** 172.16.17.128 (usuario/1234, sudo) — 90GB /build drive
+**Build:** GitHub Actions CI (.github/workflows/build.yml)
+**CI Toolchain:** clang-20, lld-20, llvm-20 (ubuntu apt)
+**Build VM:** 172.16.17.128 (usuario/1234) — unused, CI preferred
 **Host Project:** /Users/usuario/source/n200-kernel-build/
-**VM Build Dir:** /build/n200_kernel/
-**VM Clang-20:** /usr/lib/llvm-20/bin/clang (version 20.1.2)
-**VM LLD-20:** /usr/lib/llvm-20/bin/ld.lld (version 20.1.2)
+**GitHub:** https://github.com/j03ll0b0/n200-kernel-build
 
 ## Build Status: COMPLETED ✓
 
