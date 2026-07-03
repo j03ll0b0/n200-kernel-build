@@ -73,7 +73,7 @@ jobs:
 
           # Enable missing hardware drivers (from phone config)
           ./scripts/config --file build/.config \
-            -e CONFIG_QCA_CLD_WLAN \
+            -m CONFIG_QCA_CLD_WLAN \
             -e CONFIG_LEDS_QPNP_FLASH_V2 \
             -e CONFIG_MSM_BT_POWER \
             -e CONFIG_MSM_RDBG \
