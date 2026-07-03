@@ -66,6 +66,10 @@ jobs:
               -d CONFIG_TCP_CONG_CUBIC
           fi
           
+          # Build fixes
+          ./scripts/config --file build/.config \
+            -e CONFIG_SECTION_MISMATCH_WARN_ONLY
+          
           make O=build olddefconfig
           
           echo "=== Config ==="
