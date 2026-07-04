@@ -107,6 +107,12 @@ jobs:
           
           BUILD_END=$(date +%s)
           echo "Build time: $((BUILD_END - BUILD_START)) seconds"
+          
+          # Append DTB to Image (LOS uses BOARD_INCLUDE_DTB_IN_BOOTIMG := true)
+          if [ -f build/arch/arm64/boot/dts/vendor/dre/holi.dtb ]; then
+            cat build/arch/arm64/boot/dts/vendor/dre/holi.dtb >> build/arch/arm64/boot/Image
+            echo "DTB appended to Image"
+          fi
 
       - name: Package AnyKernel3
         run: |
