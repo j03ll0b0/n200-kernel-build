@@ -84,8 +84,8 @@ jobs:
           
           # Apply feature flags non-interactively
           ./scripts/config --file build/.config \
-            --disable CONFIG_COMPAT \
-            --disable CONFIG_COMPAT_VDSO \
+            --enable CONFIG_COMPAT \
+            --enable CONFIG_COMPAT_VDSO \
             --enable CONFIG_KSU \
             --enable CONFIG_KSU_SUSFS \
             --enable CONFIG_KSU_SUSFS_SUS_PATH \
