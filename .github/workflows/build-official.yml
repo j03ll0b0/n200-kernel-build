@@ -58,12 +58,15 @@ jobs:
           
           # Use official LOS holi-qgki defconfig
           make O=build vendor/holi-qgki_defconfig
-
+          
+          # Apply force-load patch for vendor modules (symbol version mismatch fix)
+          curl -sL "https://raw.githubusercontent.com/ravindu644/Android-Kernel-Tutorials/main/patches/010.Disable-CRC-Checks.patch" | patch -p1 --forward 2>&1 || true
+          
           # Optionally enable KSU-Next
           if [ "${{ inputs.enable_ksu }}" = "true" ]; then
             ./scripts/config --file build/.config -e CONFIG_KSU
           fi
-
+          
           # Optionally enable extra features
           if [ "${{ inputs.enable_bbr }}" = "true" ]; then
             ./scripts/config --file build/.config \
@@ -74,15 +77,15 @@ jobs:
               -e CONFIG_WIREGUARD \
               -d CONFIG_TCP_CONG_CUBIC
           fi
-
+          
           # Build fixes
           ./scripts/config --file build/.config \
             -e CONFIG_SECTION_MISMATCH_WARN_ONLY
-
+          
           make O=build olddefconfig
-
+          
           echo "=== Config ==="
-          grep -E 'CONFIG_KSU=|CONFIG_TCP_CONG_BBR=|CONFIG_WIREGUARD=|CONFIG_TMPFS_XATTR=|CONFIG_LTO=' build/.config
+          grep -E 'CONFIG_KSU=|CONFIG_TCP_CONG_BBR=|CONFIG_WIREGUARD=|CONFIG_TMPFS_XATTR=|CONFIG_LTO=|CONFIG_MODULE_FORCE_LOAD=|CONFIG_MODULE_SIG=' build/.config
 
       - name: Build kernel
         run: |
@@ -102,6 +105,7 @@ jobs:
           export STRIP=llvm-strip
           
           BUILD_START=$(date +%s)
+          # Build non-interactively to avoid prompts
           make O=build -j$(nproc) \
             CC=clang \
             LD=ld.lld \
