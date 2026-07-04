@@ -5,7 +5,7 @@
 properties() { '
 kernel.string=N200 Custom Kernel | KSU-Next | LTO/ThinLTO/CFI | BBR
 do.devicecheck=1
-do.modules=0
+do.modules=1
 do.systemless=0
 do.cleanup=1
 do.cleanuponabort=0

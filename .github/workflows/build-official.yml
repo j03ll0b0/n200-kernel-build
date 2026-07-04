@@ -92,6 +92,19 @@ jobs:
             STRIP=llvm-strip-20 \
             KCFLAGS="-Wno-unused-but-set-variable -Wno-strict-prototypes -Wno-implicit-function-declaration" \
             2>&1 | tee build.log
+          
+          # Build modules (techpack audio, wifi, etc.)
+          make O=build -j$(nproc) modules \
+            CC=clang-20 \
+            LD=ld.lld-20 \
+            AR=llvm-ar-20 \
+            NM=llvm-nm-20 \
+            OBJCOPY=llvm-objcopy-20 \
+            OBJDUMP=llvm-objdump-20 \
+            STRIP=llvm-strip-20 \
+            KCFLAGS="-Wno-unused-but-set-variable -Wno-strict-prototypes -Wno-implicit-function-declaration" \
+            2>&1 | tee -a build.log
+          
           BUILD_END=$(date +%s)
           echo "Build time: $((BUILD_END - BUILD_START)) seconds"
 
@@ -110,8 +123,13 @@ jobs:
             exit 1
           fi
           
+          # Copy modules
+          mkdir -p modules
+          find kernel-5.4/build -name "*.ko" -exec cp {} modules/ \; 2>/dev/null || true
+          
           cp Image AnyKernel3/
           cp anykernel.sh AnyKernel3/
+          cp -r modules AnyKernel3/
           
           cd AnyKernel3
           FEATURES="official-los23"
