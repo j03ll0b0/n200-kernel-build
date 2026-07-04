@@ -97,6 +97,8 @@ jobs:
             --enable CONFIG_MODULE_FORCE_LOAD \
             --enable CONFIG_MODULE_FORCE_UNLOAD \
             --disable CONFIG_MODULE_SIG \
+            --disable CONFIG_CFI_CLANG \
+            --disable CONFIG_CFI_PERMISSIVE \
             2>/dev/null || true
           
           # Build fixes
