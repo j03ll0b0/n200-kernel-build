@@ -129,9 +129,17 @@ jobs:
             echo "DTB appended to Image"
           fi
           
-          # Copy modules
+          # Copy modules - use absolute paths and verify
+          echo "=== Looking for modules ==="
+          find kernel-5.4/build -name "*.ko" -type f | head -20
+          MODULE_COUNT=$(find kernel-5.4/build -name "*.ko" -type f | wc -l)
+          echo "Found $MODULE_COUNT modules"
+          
           mkdir -p modules
-          find kernel-5.4/build -name "*.ko" -exec cp {} modules/ \; 2>/dev/null || true
+          find kernel-5.4/build -name "*.ko" -type f -exec cp {} modules/ \;
+          
+          echo "=== Copied modules ==="
+          ls -la modules/
           
           cp Image AnyKernel3/
           cp anykernel.sh AnyKernel3/
