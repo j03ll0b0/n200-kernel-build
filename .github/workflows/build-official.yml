@@ -136,7 +136,6 @@ jobs:
             OBJCOPY=llvm-objcopy \
             OBJDUMP=llvm-objdump \
             STRIP=llvm-strip \
-            KCFLAGS="-Wno-unused-but-set-variable -Wno-strict-prototypes -Wno-implicit-function-declaration" \
             2>&1 | tee build.log
           
           # Build DTB (for appending to Image per BOARD_INCLUDE_DTB_IN_BOOTIMG := true)
@@ -170,7 +169,6 @@ jobs:
             OBJCOPY=llvm-objcopy \
             OBJDUMP=llvm-objdump \
             STRIP=llvm-strip \
-            KCFLAGS="-Wno-unused-but-set-variable -Wno-strict-prototypes -Wno-implicit-function-declaration" \
             2>&1 | tee -a build.log
           
           BUILD_END=$(date +%s)
