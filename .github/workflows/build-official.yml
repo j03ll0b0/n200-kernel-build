@@ -36,9 +36,8 @@ jobs:
 
       - name: Setup AOSP prebuilt clang (r416183b - LOS 23.2)
         run: |
-          # Download AOSP prebuilt clang used by LOS 23.2
-          CLANG_VERSION="clang-r416183b"
-          CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/${CLANG_VERSION}.tar.gz"
+          # Download AOSP prebuilt clang used by LOS 23.2 from working mirror
+          CLANG_URL="https://github.com/ravindu644/Android-Kernel-Tutorials/releases/download/toolchains/clang-r416183b.tar.gz"
           mkdir -p clang
           curl -sL "$CLANG_URL" | tar -xz -C clang
           export PATH="${PWD}/clang/bin:${PATH}"
@@ -92,7 +91,7 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabihf-
           
-          # Use AOSP prebuilt clang
+          # Use AOSP prebuilt clang r416183b (EXACT version LOS 23.2 uses)
           export PATH="${PWD}/../clang/bin:${PATH}"
           export CC=clang
           export LD=ld.lld
