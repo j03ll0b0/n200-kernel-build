@@ -32,7 +32,7 @@ jobs:
             git-core flex bison gperf build-essential zip curl \
             libncurses5-dev libssl-dev libelf-dev bc cpio \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf \
-            python3 python3-distutils python3-setuptools
+            python3 python3-venv
 
       - name: Setup AOSP prebuilt clang (r416183b - LOS 23.2)
         run: |
