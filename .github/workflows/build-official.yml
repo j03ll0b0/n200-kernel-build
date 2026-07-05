@@ -93,7 +93,8 @@ jobs:
             --enable CONFIG_WIREGUARD \
             --enable CONFIG_TMPFS_XATTR \
             --disable CONFIG_LTO \
-            --enable CONFIG_THINLTO \
+            --disable CONFIG_THINLTO \
+            --enable CONFIG_LTO_NONE \
             --enable CONFIG_MODULE_FORCE_LOAD \
             --enable CONFIG_MODULE_FORCE_UNLOAD \
             --disable CONFIG_MODULE_SIG \
